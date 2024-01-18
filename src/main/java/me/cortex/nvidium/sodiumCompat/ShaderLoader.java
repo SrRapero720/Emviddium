@@ -5,11 +5,12 @@ import me.cortex.nvidium.config.StatisticsLoggingLevel;
 import me.cortex.nvidium.config.TranslucencySortingLevel;
 import me.cortex.nvidium.mixin.sodium.CompactChunkVertexAccessor;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants.Builder;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderParser;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 public class ShaderLoader {
-    public static String parse(Identifier path) {
+    public static String parse(ResourceLocation path) {
         var builder = ShaderConstants.builder();
         if (Nvidium.IS_DEBUG) {
             builder.add("DEBUG");

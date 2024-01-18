@@ -2,9 +2,9 @@ package me.cortex.nvidium.renderers;
 
 import me.cortex.nvidium.gl.shader.Shader;
 import me.cortex.nvidium.sodiumCompat.ShaderLoader;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 import me.cortex.nvidium.mixin.minecraft.LightMapAccessor;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL45;
 import org.lwjgl.opengl.GL45C;
 
@@ -20,9 +20,9 @@ public class TemporalTerrainRasterizer extends Phase {
     private final int blockSampler = glGenSamplers();
     private final int lightSampler = glGenSamplers();
     private final Shader shader = Shader.make()
-            .addSource(TASK, ShaderLoader.parse(new Identifier("nvidium", "terrain/temporal_task.glsl")))
-            .addSource(MESH, ShaderLoader.parse(new Identifier("nvidium", "terrain/mesh.glsl")))
-            .addSource(FRAGMENT, ShaderLoader.parse(new Identifier("nvidium", "terrain/frag.frag"))).compile();
+            .addSource(TASK, ShaderLoader.parse(new ResourceLocation("nvidium", "terrain/temporal_task.glsl")))
+            .addSource(MESH, ShaderLoader.parse(new ResourceLocation("nvidium", "terrain/mesh.glsl")))
+            .addSource(FRAGMENT, ShaderLoader.parse(new ResourceLocation("nvidium", "terrain/frag.frag"))).compile();
 
     public TemporalTerrainRasterizer() {
         GL45C.glSamplerParameteri(blockSampler, GL45C.GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
@@ -34,8 +34,8 @@ public class TemporalTerrainRasterizer extends Phase {
     public void raster(int regionCount, long commandAddr) {
         shader.bind();
 
-        int blockId = MinecraftClient.getInstance().getTextureManager().getTexture(new Identifier("minecraft", "textures/atlas/blocks.png")).getGlId();
-        int lightId = ((LightMapAccessor)MinecraftClient.getInstance().gameRenderer.getLightmapTextureManager()).getTexture().getGlId();
+        int blockId = Minecraft.getInstance().getTextureManager().getTexture(new ResourceLocation("minecraft", "textures/atlas/blocks.png")).getId();
+        int lightId = ((LightMapAccessor)Minecraft.getInstance().gameRenderer.lightTexture()).getLightTexture().getId();
 
         GL45C.glBindTextureUnit(0, blockId);
         GL45C.glBindSampler(0, blockSampler);

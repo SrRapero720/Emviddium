@@ -1,15 +1,10 @@
 package me.cortex.nvidium.sodiumCompat;
 
-import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.longs.LongArrays;
-import me.cortex.nvidium.Nvidium;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.math.Vec3d;
-import org.joml.Vector3f;
+import net.minecraft.client.Minecraft;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryUtil;
 
@@ -66,7 +61,7 @@ public class SodiumResultCompatibility {
         long outPtr = MemoryUtil.memAddress(output.getDirectBuffer());
         //NOTE: mutates the input translucent geometry
 
-        var cameraPos = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+        var cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
 
         float cpx = (float) (cameraPos.x - (result.render.getChunkX()<<4));
         float cpy = (float) (cameraPos.y - (result.render.getChunkY()<<4));

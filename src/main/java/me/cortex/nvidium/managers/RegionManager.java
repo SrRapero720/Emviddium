@@ -9,7 +9,7 @@ import me.cortex.nvidium.sodiumCompat.IViewportTest;
 import me.cortex.nvidium.util.IdProvider;
 import me.cortex.nvidium.util.UploadingBufferStream;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.ArrayDeque;
@@ -213,7 +213,7 @@ public class RegionManager {
     }
 
     public int allocateSection(int sectionX, int sectionY, int sectionZ) {
-        long regionKey = ChunkSectionPos.asLong(sectionX>>3, sectionY>>2, sectionZ>>3);
+        long regionKey = SectionPos.asLong(sectionX>>3, sectionY>>2, sectionZ>>3);
         int regionId = this.regionMap.computeIfAbsent(regionKey, k -> this.idProvider.provide());
 
         //The region doesnt exist so we must create a new one
@@ -337,7 +337,7 @@ public class RegionManager {
             Arrays.fill(this.id2pos, -1);
 
             MemoryUtil.memSet(sectionData, 0, 256 * SectionManager.SECTION_SIZE);
-            this.key = ChunkSectionPos.asLong(rx, ry, rz);
+            this.key = SectionPos.asLong(rx, ry, rz);
             this.id = id;
 
             this.rx = rx;

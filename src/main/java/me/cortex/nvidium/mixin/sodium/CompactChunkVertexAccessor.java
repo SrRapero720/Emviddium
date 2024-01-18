@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(value = CompactChunkVertex.class, remap = false)
 public interface CompactChunkVertexAccessor {
     @Accessor
-    static int getTEXTURE_MAX_VALUE() {
+    static int getTEXTURE_MAX_VALUE() { // TODO USE AT
         throw new IllegalStateException();
     }
 }

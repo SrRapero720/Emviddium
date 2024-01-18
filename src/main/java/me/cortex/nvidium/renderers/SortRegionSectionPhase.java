@@ -4,8 +4,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import me.cortex.nvidium.gl.shader.Shader;
 import me.cortex.nvidium.mixin.minecraft.LightMapAccessor;
 import me.cortex.nvidium.sodiumCompat.ShaderLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL45;
 import org.lwjgl.opengl.GL45C;
 
@@ -20,7 +19,7 @@ import static org.lwjgl.opengl.NVVertexBufferUnifiedMemory.glBufferAddressRangeN
 
 public class SortRegionSectionPhase extends Phase {
     private final Shader shader = Shader.make()
-            .addSource(COMPUTE, ShaderLoader.parse(new Identifier("nvidium", "sorting/region_section_sorter.comp")))
+            .addSource(COMPUTE, ShaderLoader.parse(new ResourceLocation("nvidium", "sorting/region_section_sorter.comp")))
             .compile();
 
     public SortRegionSectionPhase() {

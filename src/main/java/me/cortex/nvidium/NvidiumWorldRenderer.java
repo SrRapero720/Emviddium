@@ -11,8 +11,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.impl.CompactChunkVertex;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.Camera;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -151,11 +151,11 @@ public class NvidiumWorldRenderer {
     }
 
     @Nullable
-    public Sprite[] getAnimatedSpriteSet() {
+    public TextureAtlasSprite[] getAnimatedSpriteSet() {
         if (asyncChunkTracker != null) {
             return asyncChunkTracker.getVisibleAnimatedSprites();
         } else {
-            return new Sprite[0];
+            return new TextureAtlasSprite[0];
         }
     }
 }

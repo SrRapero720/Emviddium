@@ -55,6 +55,10 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${mcversion}-${fgversion}"
     annotationProcessor "net.fabricmc:sponge-mixin:0.12.5+mixin.0.8.5"
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.3.5"))
+    implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.3.5")) {
+        jarJar.ranged(it, "[0.3.5,)")
+    }
 
     // DEPENDENCIES
     implementation fg.deobf("org.embeddedt:embeddium-${mcversion}:${embeddiumversion}")

@@ -1,6 +1,5 @@
 package me.cortex.nvidium.gl.buffers;
 
-
 import me.cortex.nvidium.gl.GlObject;
 
 import static org.lwjgl.opengl.ARBDirectStateAccess.glCreateBuffers;

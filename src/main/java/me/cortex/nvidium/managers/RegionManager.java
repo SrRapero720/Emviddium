@@ -1,6 +1,5 @@
 package me.cortex.nvidium.managers;
 
-
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import me.cortex.nvidium.Nvidium;
 import me.cortex.nvidium.gl.RenderDevice;

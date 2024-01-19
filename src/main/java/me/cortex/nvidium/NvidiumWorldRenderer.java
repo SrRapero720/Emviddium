@@ -1,5 +1,6 @@
 package me.cortex.nvidium;
 
+import me.cortex.nvidium.config.EnviddiumConfig;
 import me.cortex.nvidium.gl.RenderDevice;
 import me.cortex.nvidium.managers.AsyncOcclusionTracker;
 import me.cortex.nvidium.managers.SectionManager;
@@ -115,12 +116,12 @@ public class NvidiumWorldRenderer {
 
 
     private void update_allowed_memory() {
-        if (Nvidium.config.automatic_memory) {
+        if (EnviddiumConfig.automaticMemoryLimitCache) {
             max_geometry_memory = (glGetInteger(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX) / 1024) + (sectionManager==null?0:sectionManager.terrainAreana.getMemoryUsed()/(1024*1024));
             max_geometry_memory -= 1024;//Minus 1gb of vram
             max_geometry_memory = Math.max(2048, max_geometry_memory);//Minimum 2 gb of vram
         } else {
-            max_geometry_memory = Nvidium.config.max_geometry_memory;
+            max_geometry_memory = EnviddiumConfig.maxGeometryMemoryCache;
         }
     }
 

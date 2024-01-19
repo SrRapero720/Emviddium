@@ -1,6 +1,7 @@
 package me.cortex.nvidium.mixin.minecraft;
 
 import me.cortex.nvidium.Nvidium;
+import me.cortex.nvidium.config.EnviddiumConfig;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,7 +22,7 @@ public class MixinWorldRenderer {
     private float changeRD(GameRenderer instance) {
         float viewDistance = instance.getRenderDistance();
         if (Nvidium.IS_ENABLED) {
-            var dist = Nvidium.config.region_keep_distance * 16;
+            var dist = EnviddiumConfig.regionKeepDistanceCache * 16;
             return dist == 32 * 16 ? viewDistance : (dist == 256 * 16 ? 9999999 : dist);
         }
         return viewDistance;

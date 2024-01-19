@@ -1,29 +1,28 @@
 package me.cortex.nvidium;
 
-import me.cortex.nvidium.config.NvidiumConfig;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
+import me.cortex.nvidium.config.EnviddiumConfig;
 import net.minecraft.Util;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLLoader;
 import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GLCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Mod(Nvidium.ID)
 public class Nvidium {
-    public static final String MOD_VERSION;
-    public static final Logger LOGGER = LoggerFactory.getLogger("Nvidium");
+    public static final String ID = "enviddium";
+    public static final String MOD_VERSION = FMLLoader.getLoadingModList().getModFileById(ID).getMods().get(0).getVersion().getQualifier();
+    public static final Logger LOGGER = LoggerFactory.getLogger(ID);
     public static boolean IS_COMPATIBLE = false;
     public static boolean IS_ENABLED = false;
     public static boolean IS_DEBUG = System.getProperty("nvidium.isDebug", "false").equals("TRUE");
     public static boolean SUPPORTS_PERSISTENT_SPARSE_ADDRESSABLE_BUFFER = true;
     public static boolean FORCE_DISABLE = false;
 
-    public static NvidiumConfig config = NvidiumConfig.loadOrCreate();
-
-    static {
-        ModContainer mod = (ModContainer) FabricLoader.getInstance().getModContainer("nvidium").orElseThrow(NullPointerException::new);
-        MOD_VERSION = mod.getMetadata().getVersion().getFriendlyString();
+    public Nvidium() {
+        EnviddiumConfig.load();
     }
+
     //TODO: basicly have the terrain be a virtual geometry buffer
     // once it gets too full, start culling via a callback task system
     // which executes a task on the gpu and calls back once its done
@@ -34,13 +33,13 @@ public class Nvidium {
 
     public static void checkSystemIsCapable() {
         var cap = GL.getCapabilities();
-        boolean supported = cap.GL_NV_mesh_shader &&
+        IS_COMPATIBLE = cap.GL_NV_mesh_shader &&
                 cap.GL_NV_uniform_buffer_unified_memory &&
                 cap.GL_NV_vertex_buffer_unified_memory &&
                 cap.GL_NV_representative_fragment_test &&
                 cap.GL_ARB_sparse_buffer &&
                 cap.GL_NV_bindless_multi_draw_indirect;
-        IS_COMPATIBLE = supported;
+
         if (IS_COMPATIBLE) {
             LOGGER.info("All capabilities met");
         } else {

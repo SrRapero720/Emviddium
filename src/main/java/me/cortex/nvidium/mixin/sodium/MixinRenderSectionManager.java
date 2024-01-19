@@ -3,6 +3,7 @@ package me.cortex.nvidium.mixin.sodium;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import me.cortex.nvidium.Nvidium;
 import me.cortex.nvidium.NvidiumWorldRenderer;
+import me.cortex.nvidium.config.EnviddiumConfig;
 import me.cortex.nvidium.managers.AsyncOcclusionTracker;
 import me.cortex.nvidium.sodiumCompat.INvidiumWorldRendererGetter;
 import me.cortex.nvidium.sodiumCompat.INvidiumWorldRendererSetter;
@@ -55,7 +56,7 @@ public class MixinRenderSectionManager implements INvidiumWorldRendererGetter {
         if (Nvidium.IS_ENABLED) {
             if (renderer != null)
                 throw new IllegalStateException("Cannot have multiple world renderers");
-            renderer = new NvidiumWorldRenderer(Nvidium.config.async_bfs?new AsyncOcclusionTracker(renderDistance, sectionByPosition, world, rebuildLists):null);
+            renderer = new NvidiumWorldRenderer(EnviddiumConfig.asyncBFSCache?new AsyncOcclusionTracker(renderDistance, sectionByPosition, world, rebuildLists):null);
             ((INvidiumWorldRendererSetter)regions).setWorldRenderer(renderer);
         }
     }
@@ -74,7 +75,7 @@ public class MixinRenderSectionManager implements INvidiumWorldRendererGetter {
     @Redirect(method = "onSectionRemoved", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/RenderSection;delete()V"))
     private void deleteSection(RenderSection section) {
         if (Nvidium.IS_ENABLED) {
-            if (Nvidium.config.region_keep_distance == 32) {
+            if (EnviddiumConfig.regionKeepDistanceCache == 32) { // FIXME: is intended hardcoded?
                 renderer.deleteSection(section);
             }
         }
@@ -117,7 +118,7 @@ public class MixinRenderSectionManager implements INvidiumWorldRendererGetter {
 
     @Inject(method = "createTerrainRenderList", at = @At("HEAD"), cancellable = true)
     private void redirectTerrainRenderList(Camera camera, Viewport viewport, int frame, boolean spectator, CallbackInfo ci) {
-        if (Nvidium.IS_ENABLED && Nvidium.config.async_bfs) {
+        if (Nvidium.IS_ENABLED && EnviddiumConfig.asyncBFSCache) {
             ci.cancel();
         }
     }
@@ -125,7 +126,7 @@ public class MixinRenderSectionManager implements INvidiumWorldRendererGetter {
     @Redirect(method = "submitRebuildTasks", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/RenderSection;setPendingUpdate(Lme/jellysquid/mods/sodium/client/render/chunk/ChunkUpdateType;)V"))
     private void injectEnqueueFalse(RenderSection instance, ChunkUpdateType type) {
         instance.setPendingUpdate(type);
-        if (Nvidium.IS_ENABLED && Nvidium.config.async_bfs) {
+        if (Nvidium.IS_ENABLED && EnviddiumConfig.asyncBFSCache) {
             //We need to reset the fact that its been submitted to the rebuild queue from the build queue
             ((IRenderSectionExtension) instance).isSubmittedRebuild(false);
         }
@@ -141,14 +142,14 @@ public class MixinRenderSectionManager implements INvidiumWorldRendererGetter {
 
     @Inject(method = "isSectionVisible", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/RenderSection;getLastVisibleFrame()I", shift = At.Shift.BEFORE), cancellable = true, locals = LocalCapture.CAPTURE_FAILHARD)
     private void redirectIsSectionVisible(int x, int y, int z, CallbackInfoReturnable<Boolean> cir, RenderSection render) {
-        if (Nvidium.IS_ENABLED && Nvidium.config.async_bfs) {
+        if (Nvidium.IS_ENABLED && EnviddiumConfig.asyncBFSCache) {
             cir.setReturnValue(isSectionVisibleBfs(render));
         }
     }
 
     @Inject(method = "tickVisibleRenders", at = @At("HEAD"), cancellable = true)
     private void redirectAnimatedSpriteUpdates(CallbackInfo ci) {
-        if (Nvidium.IS_ENABLED && Nvidium.config.async_bfs && SodiumClientMod.options().performance.animateOnlyVisibleTextures) {
+        if (Nvidium.IS_ENABLED && EnviddiumConfig.asyncBFSCache && SodiumClientMod.options().performance.animateOnlyVisibleTextures) {
             ci.cancel();
             var sprites = renderer.getAnimatedSpriteSet();
             if (sprites == null) {
@@ -162,7 +163,7 @@ public class MixinRenderSectionManager implements INvidiumWorldRendererGetter {
 
     @Inject(method = "scheduleRebuild", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/RenderSection;setPendingUpdate(Lme/jellysquid/mods/sodium/client/render/chunk/ChunkUpdateType;)V", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD)
     private void instantReschedule(int x, int y, int z, boolean important, CallbackInfo ci, RenderSection section, ChunkUpdateType pendingUpdate) {
-        if (Nvidium.IS_ENABLED && Nvidium.config.async_bfs) {
+        if (Nvidium.IS_ENABLED && EnviddiumConfig.asyncBFSCache) {
             var queue = rebuildLists.get(pendingUpdate);
             //TODO:FIXME: this might result in the section being enqueued multiple times, if this gets executed, and the async search sees it at the exactly wrong moment
             if (isSectionVisibleBfs(section) && queue.size() < pendingUpdate.getMaximumQueueSize()) {

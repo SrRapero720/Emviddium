@@ -8,13 +8,19 @@ import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatte
 import me.jellysquid.mods.sodium.client.gui.options.control.CyclingControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.TickBoxControl;
+import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConfigGuiBuilder {
-    private static final NvidiumConfigStore store = new NvidiumConfigStore();
-    public static void addNvidiumGui(List<OptionPage> pages) {
+public class EnviddiumPage extends OptionPage {
+    private static final OptionStorage<?> store = new DefaultOptionStorage();
+
+    public EnviddiumPage() {
+        super(Component.translatable("nvidium.options.pages.nvidium"), ImmutableList.copyOf(create()));
+    }
+
+    public static ImmutableList<OptionGroup> create() {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
@@ -47,7 +53,10 @@ public class ConfigGuiBuilder {
                         .setControl(option -> new SliderControl(option, 32, 256, 1, x->Component.literal(x==32?"Vanilla":(x==256?"Keep All":x+" chunks"))))
                         .setImpact(OptionImpact.VARIES)
                         .setEnabled(Nvidium.IS_ENABLED)
-                        .setBinding((opts, value) -> opts.region_keep_distance = value, opts -> opts.region_keep_distance)
+                        .setBinding((opts, value) -> {
+                            EnviddiumConfig.regionKeepDistance.set(value);
+                            EnviddiumConfig.regionKeepDistanceCache = value;
+                        }, opts -> EnviddiumConfig.regionKeepDistanceCache)
                         .setFlags()
                         .build()
                 ).add(OptionImpl.createBuilder(boolean.class, store)
@@ -56,7 +65,10 @@ public class ConfigGuiBuilder {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setEnabled(Nvidium.IS_ENABLED)
-                        .setBinding((opts, value) -> opts.enable_temporal_coherence = value, opts -> opts.enable_temporal_coherence)
+                        .setBinding((opts, value) -> {
+                            EnviddiumConfig.temporalCoherence.set(value);
+                            EnviddiumConfig.temporalCoherenceCache = value;
+                        }, opts -> EnviddiumConfig.temporalCoherenceCache)
                         .setFlags()
                         .build()
                 ).add(OptionImpl.createBuilder(boolean.class, store)
@@ -65,7 +77,10 @@ public class ConfigGuiBuilder {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
                         .setEnabled(Nvidium.IS_ENABLED)
-                        .setBinding((opts, value) -> opts.async_bfs = value, opts -> opts.async_bfs)
+                        .setBinding((opts, value) -> {
+                            EnviddiumConfig.asyncBFS.set(value);
+                            EnviddiumConfig.asyncBFSCache = value;
+                        }, opts -> EnviddiumConfig.asyncBFSCache)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 ).add(OptionImpl.createBuilder(boolean.class, store)
@@ -74,7 +89,10 @@ public class ConfigGuiBuilder {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.VARIES)
                         .setEnabled(Nvidium.IS_ENABLED)
-                        .setBinding((opts, value) -> opts.automatic_memory = value, opts -> opts.automatic_memory)
+                        .setBinding((opts, value) -> {
+                            EnviddiumConfig.automaticMemoryLimit.set(value);
+                            EnviddiumConfig.automaticMemoryLimitCache = value;
+                        }, opts -> EnviddiumConfig.automaticMemoryLimitCache)
                         .setFlags()
                         .build())
                 .add(OptionImpl.createBuilder(int.class, store)
@@ -82,17 +100,20 @@ public class ConfigGuiBuilder {
                         .setTooltip(Component.translatable("nvidium.options.max_gpu_memory.tooltip"))
                         .setControl(option -> new SliderControl(option, 2048, 32768, 512, ControlValueFormatter.translateVariable("nvidium.options.mb")))
                         .setImpact(OptionImpact.VARIES)
-                        .setEnabled(Nvidium.IS_ENABLED && !Nvidium.config.automatic_memory)
-                        .setBinding((opts, value) -> opts.max_geometry_memory = value, opts -> opts.max_geometry_memory)
+                        .setEnabled(Nvidium.IS_ENABLED && !EnviddiumConfig.automaticMemoryLimitCache)
+                        .setBinding((opts, value) -> {
+                            EnviddiumConfig.maxGeometryMemory.set(value);
+                            EnviddiumConfig.maxGeometryMemoryCache = value;
+                        }, opts -> EnviddiumConfig.maxGeometryMemoryCache)
                         .setFlags(Nvidium.SUPPORTS_PERSISTENT_SPARSE_ADDRESSABLE_BUFFER?new OptionFlag[0]:new OptionFlag[]{OptionFlag.REQUIRES_RENDERER_RELOAD})
                         .build()
-                ).add(OptionImpl.createBuilder(TranslucencySortingLevel.class, store)
+                ).add(OptionImpl.createBuilder(EnviddiumConfig.TranslucencySortingLevel.class, store)
                         .setName(Component.translatable("nvidium.options.translucency_sorting.name"))
                         .setTooltip(Component.translatable("nvidium.options.translucency_sorting.tooltip"))
                         .setControl(
                                 opts -> new CyclingControl<>(
                                         opts,
-                                        TranslucencySortingLevel.class,
+                                        EnviddiumConfig.TranslucencySortingLevel.class,
                                         new Component[]{
                                                 Component.translatable("nvidium.options.translucency_sorting.none"),
                                                 Component.translatable("nvidium.options.translucency_sorting.sections"),
@@ -100,19 +121,19 @@ public class ConfigGuiBuilder {
                                         }
                                 )
                         )
-                        .setBinding((opts, value) -> opts.translucency_sorting_level = value, opts -> opts.translucency_sorting_level)
+                        .setBinding((opts, value) -> EnviddiumConfig.translucentSortLevel.set(value), opts -> EnviddiumConfig.translucentSortLevel.get())
                         .setEnabled(Nvidium.IS_ENABLED)
                         .setImpact(OptionImpact.MEDIUM)
                         //Technically, only need to reload when going from NONE->SECTIONS
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
-                ).add(OptionImpl.createBuilder(StatisticsLoggingLevel.class, store)
+                ).add(OptionImpl.createBuilder(EnviddiumConfig.StatisticsLoggingLevel.class, store)
                         .setName(Component.translatable("nvidium.options.statistics_level.name"))
                         .setTooltip(Component.translatable("nvidium.options.statistics_level.tooltip"))
                         .setControl(
                                 opts -> new CyclingControl<>(
                                         opts,
-                                        StatisticsLoggingLevel.class,
+                                        EnviddiumConfig.StatisticsLoggingLevel.class,
                                         new Component[]{
                                                 Component.translatable("nvidium.options.statistics_level.none"),
                                                 Component.translatable("nvidium.options.statistics_level.frustum"),
@@ -122,15 +143,13 @@ public class ConfigGuiBuilder {
                                         }
                                 )
                         )
-                        .setBinding((opts, value) -> opts.statistics_level = value, opts -> opts.statistics_level)
+                        .setBinding((opts, value) -> EnviddiumConfig.statisticsLevel.set(value), opts -> EnviddiumConfig.statisticsLevel.get())
                         .setEnabled(Nvidium.IS_ENABLED)
                         .setImpact(OptionImpact.LOW)
                         .setFlags(NvidiumOptionFlags.REQUIRES_SHADER_RELOAD)
                         .build()
                 )
                 .build());
-        if (Nvidium.IS_COMPATIBLE) {
-            pages.add(new OptionPage(Component.translatable("nvidium.options.pages.nvidium"), ImmutableList.copyOf(groups)));
-        }
+        return ImmutableList.copyOf(groups);
     }
 }

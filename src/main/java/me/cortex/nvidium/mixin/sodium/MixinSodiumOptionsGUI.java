@@ -1,7 +1,7 @@
 package me.cortex.nvidium.mixin.sodium;
 
 import me.cortex.nvidium.NvidiumWorldRenderer;
-import me.cortex.nvidium.config.ConfigGuiBuilder;
+import me.cortex.nvidium.config.EnviddiumPage;
 import me.cortex.nvidium.sodiumCompat.INvidiumWorldRendererGetter;
 import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 import me.jellysquid.mods.sodium.client.gui.options.*;
@@ -19,13 +19,13 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.*;
 
-@Mixin(value = SodiumOptionsGUI.class, remap = false)
+@Mixin(value = SodiumOptionsGUI.class, remap = false, priority = 99 /* stay over Embeddium++ */)
 public class MixinSodiumOptionsGUI {
     @Shadow @Final private List<OptionPage> pages;
 
-    @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Ljava/util/List;add(Ljava/lang/Object;)Z", ordinal = 3, shift = At.Shift.AFTER))
+    @Inject(method = "<init>", at = @At("RETURN"), locals = LocalCapture.CAPTURE_FAILHARD)
     private void addNvidiumOptions(Screen prevScreen, CallbackInfo ci) {
-        ConfigGuiBuilder.addNvidiumGui(pages);
+        this.pages.add(new EnviddiumPage());
     }
 
     @Inject(method = "applyChanges", at = @At("RETURN"), locals = LocalCapture.CAPTURE_FAILSOFT)

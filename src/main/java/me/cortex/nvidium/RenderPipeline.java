@@ -3,11 +3,9 @@ package me.cortex.nvidium;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.*;
-import me.cortex.nvidium.config.StatisticsLoggingLevel;
-import me.cortex.nvidium.config.TranslucencySortingLevel;
+import me.cortex.nvidium.config.EnviddiumConfig;
 import me.cortex.nvidium.gl.RenderDevice;
 import me.cortex.nvidium.gl.buffers.IDeviceMappedBuffer;
-import me.cortex.nvidium.managers.RegionManager;
 import me.cortex.nvidium.managers.RegionVisibilityTracker;
 import me.cortex.nvidium.managers.SectionManager;
 import me.cortex.nvidium.renderers.*;
@@ -32,11 +30,9 @@ import static org.lwjgl.opengl.GL30C.GL_RED_INTEGER;
 import static org.lwjgl.opengl.GL42.*;
 import static org.lwjgl.opengl.GL43C.GL_SHADER_STORAGE_BARRIER_BIT;
 import static org.lwjgl.opengl.NVRepresentativeFragmentTest.GL_REPRESENTATIVE_FRAGMENT_TEST_NV;
-import static org.lwjgl.opengl.NVShaderBufferStore.GL_SHADER_GLOBAL_ACCESS_BARRIER_BIT_NV;
 import static org.lwjgl.opengl.NVUniformBufferUnifiedMemory.GL_UNIFORM_BUFFER_ADDRESS_NV;
 import static org.lwjgl.opengl.NVUniformBufferUnifiedMemory.GL_UNIFORM_BUFFER_UNIFIED_NV;
 import static org.lwjgl.opengl.NVVertexBufferUnifiedMemory.*;
-
 
 //TODO: extract out sectionManager, uploadStream, downloadStream and other funky things to an auxiliary parent NvidiumWorldRenderer class
 public class RenderPipeline {
@@ -138,7 +134,7 @@ public class RenderPipeline {
             IntSortedSet regions = new IntAVLTreeSet();
             for (int i = 0; i < rm.maxRegionIndex(); i++) {
                 if (!rm.regionExists(i)) continue;
-                if ((Nvidium.config.region_keep_distance != 256 && Nvidium.config.region_keep_distance != 32) && !rm.withinSquare(Nvidium.config.region_keep_distance+4, i, chunkPos.x, chunkPos.y, chunkPos.z)) {
+                if ((EnviddiumConfig.regionKeepDistanceCache != 256 && EnviddiumConfig.regionKeepDistanceCache != 32) && !rm.withinSquare(EnviddiumConfig.regionKeepDistanceCache+4, i, chunkPos.x, chunkPos.y, chunkPos.z)) {
                     removeRegion(i);
                     continue;
                 }
@@ -159,7 +155,7 @@ public class RenderPipeline {
                 } else {
                     if (regionVisibilityTracker.get(i)) {//Going from visible to non visible
                         //Clear the visibility bits
-                        if (Nvidium.config.enable_temporal_coherence) {
+                        if (EnviddiumConfig.temporalCoherenceCache) {
                             glClearNamedBufferSubData(sectionVisibility.getId(), GL_R8UI, (long) i << 8, 255, GL_RED_INTEGER, GL_UNSIGNED_BYTE, new int[]{0});
                         }
                     }
@@ -179,7 +175,7 @@ public class RenderPipeline {
                 j++;
             }
 
-            if (Nvidium.config.statistics_level != StatisticsLoggingLevel.NONE) {
+            if (EnviddiumConfig.statisticsLevel.get() != EnviddiumConfig.StatisticsLoggingLevel.NONE) {
                 stats.frustumCount = regions.size();
             }
         }
@@ -231,7 +227,7 @@ public class RenderPipeline {
             MemoryUtil.memPutByte(addr, (byte) (frameId++));
         }
 
-        if (Nvidium.config.translucency_sorting_level == TranslucencySortingLevel.NONE) {
+        if (EnviddiumConfig.translucentSortLevel.get() == EnviddiumConfig.TranslucencySortingLevel.NONE) {
             regionsToSort.clear();
         }
 
@@ -292,7 +288,7 @@ public class RenderPipeline {
         prevRegionCount = visibleRegions;
 
         //Do temporal rasterization
-        if (Nvidium.config.enable_temporal_coherence) {
+        if (EnviddiumConfig.temporalCoherenceCache) {
             glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
             temporalRasterizer.raster(visibleRegions, terrainCommandBuffer.getDeviceAddress());
         }
@@ -381,7 +377,7 @@ public class RenderPipeline {
 
 
         //Download statistics
-        if (Nvidium.config.statistics_level.ordinal() > StatisticsLoggingLevel.FRUSTUM.ordinal()){
+        if (EnviddiumConfig.statisticsLevel.get().ordinal() > EnviddiumConfig.StatisticsLoggingLevel.FRUSTUM.ordinal()){
             downloadStream.download(statisticsBuffer, 0, 4*4, (addr)-> {
                 stats.regionCount = MemoryUtil.memGetInt(addr);
                 stats.sectionCount = MemoryUtil.memGetInt(addr+4);
@@ -390,7 +386,7 @@ public class RenderPipeline {
         }
 
 
-        if (Nvidium.config.statistics_level.ordinal() > StatisticsLoggingLevel.FRUSTUM.ordinal()) {
+        if (EnviddiumConfig.statisticsLevel.get().ordinal() > EnviddiumConfig.StatisticsLoggingLevel.FRUSTUM.ordinal()) {
             //glMemoryBarrier(GL_ALL_BARRIER_BITS);
             //Stupid bloody nvidia not following spec forcing me to use a upload stream
             long upload = this.uploadStream.upload(statisticsBuffer, 0, 4*4);
@@ -422,19 +418,19 @@ public class RenderPipeline {
     }
 
     public void addDebugInfo(List<String> info) {
-        if (Nvidium.config.statistics_level != StatisticsLoggingLevel.NONE) {
+        if (EnviddiumConfig.statisticsLevel.get() != EnviddiumConfig.StatisticsLoggingLevel.NONE) {
             StringBuilder builder = new StringBuilder();
             builder.append("Statistics: \n");
-            if (Nvidium.config.statistics_level.ordinal() >=  StatisticsLoggingLevel.FRUSTUM.ordinal()) {
+            if (EnviddiumConfig.statisticsLevel.get().ordinal() >=  EnviddiumConfig.StatisticsLoggingLevel.FRUSTUM.ordinal()) {
                 builder.append("Frustum: ").append(stats.frustumCount).append("\n");
             }
-            if (Nvidium.config.statistics_level.ordinal() >=  StatisticsLoggingLevel.REGIONS.ordinal()) {
+            if (EnviddiumConfig.statisticsLevel.get().ordinal() >=  EnviddiumConfig.StatisticsLoggingLevel.REGIONS.ordinal()) {
                 builder.append("Regions: ").append(stats.regionCount).append("\n");
             }
-            if (Nvidium.config.statistics_level.ordinal() >=  StatisticsLoggingLevel.SECTIONS.ordinal()) {
+            if (EnviddiumConfig.statisticsLevel.get().ordinal() >=  EnviddiumConfig.StatisticsLoggingLevel.SECTIONS.ordinal()) {
                 builder.append("Sections: ").append(stats.sectionCount).append("\n");
             }
-            if (Nvidium.config.statistics_level.ordinal() >=  StatisticsLoggingLevel.QUADS.ordinal()) {
+            if (EnviddiumConfig.statisticsLevel.get().ordinal() >=  EnviddiumConfig.StatisticsLoggingLevel.QUADS.ordinal()) {
                 builder.append("Quads: ").append(stats.quadCount).append("\n");
             }
             info.addAll(List.of(builder.toString().split("\n")));

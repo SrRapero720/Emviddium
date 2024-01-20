@@ -2,7 +2,10 @@ package me.cortex.nvidium;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.ints.IntAVLTreeSet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import me.cortex.nvidium.config.EnviddiumConfig;
 import me.cortex.nvidium.gl.RenderDevice;
 import me.cortex.nvidium.gl.buffers.IDeviceMappedBuffer;
@@ -13,12 +16,15 @@ import me.cortex.nvidium.util.DownloadTaskStream;
 import me.cortex.nvidium.util.TickableManager;
 import me.cortex.nvidium.util.UploadingBufferStream;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
-import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
-import org.joml.*;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import net.coderbot.iris.vendored.joml.Vector3i;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryUtil;
+import repack.joml.Matrix4f;
+import repack.joml.Vector3f;
+import repack.joml.Vector4f;
+import repack.joml.Vector4i;
 
-import java.lang.Math;
 import java.util.BitSet;
 import java.util.List;
 
@@ -112,7 +118,7 @@ public class RenderPipeline {
 
     //ISSUE TODO: regions that where in frustum but are now out of frustum must have the visibility data cleared
     // this is due to funny issue of pain where the section was "visible" last frame cause it didnt get ticked
-    public void renderFrame(Viewport frustum, ChunkRenderMatrices crm, double px, double py, double pz) {//NOTE: can use any of the command list rendering commands to basicly draw X indirects using the same shader, thus allowing for terrain to be rendered very efficently
+    public void renderFrame(Frustum frustum, ChunkRenderMatrices crm, double px, double py, double pz) {//NOTE: can use any of the command list rendering commands to basicly draw X indirects using the same shader, thus allowing for terrain to be rendered very efficently
 
         if (sectionManager.getRegionManager().regionCount() == 0) return;//Dont render anything if there is nothing to render
         Vector3i blockPos = new Vector3i(((int)Math.floor(px)), ((int)Math.floor(py)), ((int)Math.floor(pz)));
@@ -182,7 +188,7 @@ public class RenderPipeline {
 
         {
             //TODO: maybe segment the uniform buffer into 2 parts, always updating and static where static holds pointers
-            Vector3f delta = new Vector3f((float) (px-(chunkPos.x<<4)), (float) (py-(chunkPos.y<<4)), (float) (pz-(chunkPos.z<<4)));
+            repack.joml.Vector3f delta = new Vector3f((float) (px-(chunkPos.x<<4)), (float) (py-(chunkPos.y<<4)), (float) (pz-(chunkPos.z<<4)));
             delta.negate();
             long addr = uploadStream.upload(sceneUniform, 0, SCENE_SIZE);
             var mvp =new Matrix4f(crm.projection())

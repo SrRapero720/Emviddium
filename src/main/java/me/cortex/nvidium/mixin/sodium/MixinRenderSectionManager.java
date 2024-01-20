@@ -11,18 +11,21 @@ import me.cortex.nvidium.sodiumCompat.IRenderSectionExtension;
 import me.cortex.nvidium.sodiumCompat.IrisCheck;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
+import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkUpdateType;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -43,20 +46,20 @@ import java.util.Map;
 @Mixin(value = RenderSectionManager.class, remap = false)
 public class MixinRenderSectionManager implements INvidiumWorldRendererGetter {
     @Shadow @Final private RenderRegionManager regions;
-    @Shadow @Final private Long2ReferenceMap<RenderSection> sectionByPosition;
-    @Shadow private @NotNull Map<ChunkUpdateType, ArrayDeque<RenderSection>> rebuildLists;
+    @Shadow @Final private Long2ReferenceMap<RenderSection> sections;
+    @Shadow private @NotNull Map<ChunkUpdateType, ArrayDeque<RenderSection>> rebuildQueues;
     @Shadow @Final private int renderDistance;
     @Unique private NvidiumWorldRenderer renderer;
-    @Unique private Viewport viewport;
+    @Unique private Frustum viewport;
 
 
     @Inject(method = "<init>", at = @At("TAIL"))
-    private void init(ClientLevel world, int renderDistance, CommandList commandList, CallbackInfo ci) {
+    private void init(SodiumWorldRenderer worldRenderer, BlockRenderPassManager renderPassManager, ClientLevel world, int renderDistance, CommandList commandList, CallbackInfo ci) {
         Nvidium.IS_ENABLED = (!Nvidium.FORCE_DISABLE) && Nvidium.IS_COMPATIBLE && IrisCheck.checkIrisShouldDisable();
         if (Nvidium.IS_ENABLED) {
             if (renderer != null)
                 throw new IllegalStateException("Cannot have multiple world renderers");
-            renderer = new NvidiumWorldRenderer(EnviddiumConfig.asyncBFSCache?new AsyncOcclusionTracker(renderDistance, sectionByPosition, world, rebuildLists):null);
+            renderer = new NvidiumWorldRenderer(EnviddiumConfig.asyncBFSCache?new AsyncOcclusionTracker(renderDistance, sections, world, rebuildQueues):null);
             ((INvidiumWorldRendererSetter)regions).setWorldRenderer(renderer);
         }
     }
@@ -72,7 +75,8 @@ public class MixinRenderSectionManager implements INvidiumWorldRendererGetter {
         }
     }
 
-    @Redirect(method = "onSectionRemoved", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/RenderSection;delete()V"))
+    // TODO: Look if was right
+    @Redirect(method = "unloadSection", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/RenderSection;delete()V"))
     private void deleteSection(RenderSection section) {
         if (Nvidium.IS_ENABLED) {
             if (EnviddiumConfig.regionKeepDistanceCache == 32) { // FIXME: is intended hardcoded?
@@ -83,18 +87,18 @@ public class MixinRenderSectionManager implements INvidiumWorldRendererGetter {
     }
 
     @Inject(method = "update", at = @At("HEAD"))
-    private void trackViewport(Camera camera, Viewport viewport, int frame, boolean spectator, CallbackInfo ci) {
+    private void trackViewport(Camera camera, Frustum viewport, int frame, boolean spectator, CallbackInfo ci) {
         this.viewport = viewport;
     }
 
     @Inject(method = "renderLayer", at = @At("HEAD"), cancellable = true)
-    public void renderLayer(ChunkRenderMatrices matrices, TerrainRenderPass pass, double x, double y, double z, CallbackInfo ci) {
+    public void renderLayer(ChunkRenderMatrices matrices, BlockRenderPass pass, double x, double y, double z, CallbackInfo ci) {
         if (Nvidium.IS_ENABLED) {
             ci.cancel();
             pass.startDrawing();
-            if (pass == DefaultTerrainRenderPasses.SOLID) {
+            if (pass == BlockRenderPass.SOLID) {
                 renderer.renderFrame(viewport, matrices, x, y, z);
-            } else if (pass == DefaultTerrainRenderPasses.TRANSLUCENT) {
+            } else if (pass == BlockRenderPass.TRANSLUCENT) {
                 renderer.renderTranslucent();
             }
             pass.endDrawing();
@@ -164,11 +168,11 @@ public class MixinRenderSectionManager implements INvidiumWorldRendererGetter {
     @Inject(method = "scheduleRebuild", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/RenderSection;setPendingUpdate(Lme/jellysquid/mods/sodium/client/render/chunk/ChunkUpdateType;)V", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD)
     private void instantReschedule(int x, int y, int z, boolean important, CallbackInfo ci, RenderSection section, ChunkUpdateType pendingUpdate) {
         if (Nvidium.IS_ENABLED && EnviddiumConfig.asyncBFSCache) {
-            var queue = rebuildLists.get(pendingUpdate);
+            var queue = rebuildQueues.get(pendingUpdate);
             //TODO:FIXME: this might result in the section being enqueued multiple times, if this gets executed, and the async search sees it at the exactly wrong moment
             if (isSectionVisibleBfs(section) && queue.size() < pendingUpdate.getMaximumQueueSize()) {
                 ((IRenderSectionExtension)section).isSubmittedRebuild(true);
-                rebuildLists.get(pendingUpdate).add(section);
+                rebuildQueues.get(pendingUpdate).add(section);
             }
         }
     }

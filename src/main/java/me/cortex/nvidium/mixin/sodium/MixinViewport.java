@@ -4,11 +4,12 @@ import me.cortex.nvidium.sodiumCompat.IViewportTest;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.render.viewport.frustum.Frustum;
+import net.minecraft.client.renderer.culling.Frustum;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(value = Viewport.class, remap = false)
+@Mixin(value = Frustum.class, remap = false)
 public class MixinViewport implements IViewportTest {
     @Shadow @Final private CameraTransform transform;
 

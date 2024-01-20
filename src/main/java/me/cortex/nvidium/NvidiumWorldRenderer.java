@@ -9,9 +9,9 @@ import me.cortex.nvidium.util.UploadingBufferStream;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.impl.CompactChunkVertex;
-import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import net.coderbot.iris.compat.sodium.impl.vertex_format.terrain_xhfp.XHFPModelVertexType;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.jetbrains.annotations.Nullable;
@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.glGetInteger;
-import static org.lwjgl.opengl.GL11.glNewList;
 import static org.lwjgl.opengl.NVXGPUMemoryInfo.GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX;
 
 public class NvidiumWorldRenderer {
@@ -49,7 +48,7 @@ public class NvidiumWorldRenderer {
 
         update_allowed_memory();
         //this.sectionManager = new SectionManager(device, max_geometry_memory*1024*1024, uploadStream, 150, 24, CompactChunkVertex.STRIDE);
-        this.sectionManager = new SectionManager(device, max_geometry_memory*1024*1024, uploadStream, CompactChunkVertex.STRIDE, this);
+        this.sectionManager = new SectionManager(device, max_geometry_memory*1024*1024, uploadStream, XHFPModelVertexType.STRIDE, this); // TODO: CHECK IF STRIDE WAS RIGHT
         this.renderPipeline = new RenderPipeline(device, uploadStream, downloadStream, sectionManager);
 
 
@@ -76,7 +75,7 @@ public class NvidiumWorldRenderer {
         renderPipeline.reloadShaders();
     }
 
-    public void renderFrame(Viewport viewport, ChunkRenderMatrices matrices, double x, double y, double z) {
+    public void renderFrame(Frustum viewport, ChunkRenderMatrices matrices, double x, double y, double z) {
         renderPipeline.renderFrame(viewport, matrices, x, y, z);
 
         if (sectionManager.terrainAreana.getUsedMB()>(max_geometry_memory-50)) {
@@ -97,7 +96,7 @@ public class NvidiumWorldRenderer {
         this.sectionManager.deleteSection(section);
     }
 
-    public void uploadBuildResult(ChunkBuildOutput buildOutput) {
+    public void uploadBuildResult(ChunkBuildResult buildOutput) {
         this.sectionManager.uploadChunkBuildResult(buildOutput);
     }
 
@@ -125,7 +124,7 @@ public class NvidiumWorldRenderer {
         }
     }
 
-    public void update(Camera camera, Viewport viewport, int frame, boolean spectator) {
+    public void update(Camera camera, Frustum viewport, int frame, boolean spectator) {
         if (asyncChunkTracker != null) {
             asyncChunkTracker.update(viewport, camera, spectator);
         }

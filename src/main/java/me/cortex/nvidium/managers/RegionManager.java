@@ -7,7 +7,7 @@ import me.cortex.nvidium.gl.buffers.IDeviceMappedBuffer;
 import me.cortex.nvidium.sodiumCompat.IViewportTest;
 import me.cortex.nvidium.util.IdProvider;
 import me.cortex.nvidium.util.UploadingBufferStream;
-import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import net.minecraft.core.SectionPos;
 import org.lwjgl.system.MemoryUtil;
 
@@ -261,13 +261,13 @@ public class RegionManager {
         return this.regions[regionId] != null;
     }
 
-    public boolean isRegionVisible(Viewport frustum, int regionId) {
+    public boolean isRegionVisible(Frustum frustum, int regionId) {
         var region = this.regions[regionId];
         if (region == null) {
             return false;
         } else {
             //FIXME: should make it use the region data so that the frustum bounds check is more accurate
-            return ((IViewportTest)(Object)frustum).isBoxVisible(region.rx<<7,region.ry<<6, region.rz<<7, 1<<7, 1<<6, 1<<7);
+            return ((IViewportTest) frustum).isBoxVisible(region.rx<<7,region.ry<<6, region.rz<<7, 1<<7, 1<<6, 1<<7);
         }
     }
 

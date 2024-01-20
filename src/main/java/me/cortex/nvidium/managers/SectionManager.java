@@ -6,15 +6,14 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import me.cortex.nvidium.NvidiumWorldRenderer;
 import me.cortex.nvidium.gl.RenderDevice;
 import me.cortex.nvidium.sodiumCompat.IRepackagedResult;
-import me.cortex.nvidium.sodiumCompat.RepackagedSectionOutput;
 import me.cortex.nvidium.util.BufferArena;
 import me.cortex.nvidium.util.UploadingBufferStream;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import net.minecraft.core.SectionPos;
-import org.joml.Vector3i;
-import org.joml.Vector4i;
 import org.lwjgl.system.MemoryUtil;
+import repack.joml.Vector3i;
+import repack.joml.Vector4i;
 
 public class SectionManager {
     public static final int SECTION_SIZE = 32;
@@ -45,7 +44,7 @@ public class SectionManager {
         this.section2terrain.defaultReturnValue(-1);
     }
 
-    public void uploadChunkBuildResult(ChunkBuildOutput result) {
+    public void uploadChunkBuildResult(ChunkBuildResult result) {
         var output = ((IRepackagedResult)result).getOutput();
 
         RenderSection section = result.render;

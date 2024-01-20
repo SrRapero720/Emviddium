@@ -10,6 +10,7 @@ import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderBuffers;
@@ -33,7 +34,7 @@ public abstract class MixinSodiumWorldRenderer implements INvidiumWorldRendererG
     }
 
     @Inject(method = "setupTerrain", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/RenderSectionManager;needsUpdate()Z", shift = At.Shift.BEFORE))
-    private void injectTerrainSetup(Camera camera, Viewport viewport, int frame, boolean spectator, boolean updateChunksImmediately, CallbackInfo ci) {
+    private void injectTerrainSetup(Camera camera, Frustum viewport, int frame, boolean spectator, boolean updateChunksImmediately, CallbackInfo ci) {
         if (Nvidium.IS_ENABLED && EnviddiumConfig.asyncBFSCache) {
             ((INvidiumWorldRendererGetter)renderSectionManager).getRenderer().update(camera, viewport, frame, spectator);
         }

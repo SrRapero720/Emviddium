@@ -9,6 +9,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionFlags;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.OcclusionCuller;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -31,7 +32,7 @@ public class AsyncOcclusionTracker {
 
     private volatile boolean running = true;
     private volatile int frame = 0;
-    private volatile Viewport viewport = null;
+    private volatile Frustum viewport = null;
 
     private final Semaphore framesAhead = new Semaphore(0);
 
@@ -118,7 +119,7 @@ public class AsyncOcclusionTracker {
         }
     }
 
-    public final void update(Viewport viewport, Camera camera, boolean spectator) {
+    public final void update(Frustum viewport, Camera camera, boolean spectator) {
         this.shouldUseOcclusionCulling = this.shouldUseOcclusionCulling(camera, spectator);
 
         this.viewport = viewport;
